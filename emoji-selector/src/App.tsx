@@ -1,29 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
-
-// 定义emoji列表
-const EMOJI_LIST = ["😀", "😂", "🥰", "😎", "🤔", "😴", "🥳", "😍", "🤓", "😇"];
+import { loadEmojiList } from "./data/emojiList";
 
 function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<string[]>([]);
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [emojiList, setEmojiList] = useState<string[]>([]);
 
-  // 生成两个随机emoji
-  const generateRandomEmojis = () => {
-    const shuffled = [...EMOJI_LIST].sort(() => 0.5 - Math.random());
+  // Load emojis on mount
+  useEffect(() => {
+    loadEmojiList().then(emojis => {
+      setEmojiList(emojis);
+    });
+  }, []);
+
+  // Memoize generateRandomEmojis function
+  const generateRandomEmojis = useCallback(() => {
+    const availableEmojis = emojiList.filter(emoji => !selections.includes(emoji));
+    const shuffled = [...availableEmojis].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 2);
-  };
+  }, [emojiList, selections]);
 
-  // 初始化或重置游戏
+  // Initialize or reset game
   useEffect(() => {
     if (currentStep === 0) {
       setCurrentOptions(generateRandomEmojis());
     }
-  }, [currentStep]);
+  }, [currentStep, generateRandomEmojis]);
 
-  // 处理选择
+  // Handle selection
   const handleSelection = (selectedEmoji: string) => {
     const newSelections = [...selections, selectedEmoji];
     setSelections(newSelections);
@@ -36,12 +43,17 @@ function App() {
     }
   };
 
-  // 重置游戏
+  // Reset game
   const resetGame = () => {
     setCurrentStep(0);
     setSelections([]);
     setCurrentOptions(generateRandomEmojis());
     setIsComplete(false);
+  };
+
+  // Generate new options without selecting
+  const handleSkip = () => {
+    setCurrentOptions(generateRandomEmojis());
   };
 
   return (
@@ -61,6 +73,11 @@ function App() {
                   {emoji}
                 </button>
               ))}
+            </div>
+            <div className="action-buttons">
+              <button className="skip-button" onClick={handleSkip}>
+                换一对
+              </button>
             </div>
           </div>
         ) : (
