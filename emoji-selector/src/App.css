@@ -232,18 +232,31 @@
 
 .reset-button {
   font-size: 1.2rem;
-  padding: 0.8rem 1.5rem;
-  background-color: #61dafb;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #61dafb, #4fa8c7);
   border: none;
-  border-radius: 4px;
-  color: #282c34;
+  border-radius: 50px;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
   margin-top: 2rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(97, 218, 251, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
 }
 
 .reset-button:hover {
-  background-color: #4fa8c7;
+  background: linear-gradient(135deg, #4fa8c7, #3a8aad);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(97, 218, 251, 0.6);
+}
+
+.reset-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 10px rgba(97, 218, 251, 0.4);
 }
 
 .action-buttons {
