@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import { loadEmojiList } from "./data/emojiList";
+import { getSongRecommendations } from "./services/songService";
+import SongRecommendations from "./components/SongRecommendations";
+import { Song } from "./types/song";
 
 function App() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -8,17 +11,21 @@ function App() {
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [emojiList, setEmojiList] = useState<string[]>([]);
+  const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load emojis on mount
   useEffect(() => {
-    loadEmojiList().then(emojis => {
+    loadEmojiList().then((emojis) => {
       setEmojiList(emojis);
     });
   }, []);
 
   // Memoize generateRandomEmojis function
   const generateRandomEmojis = useCallback(() => {
-    const availableEmojis = emojiList.filter(emoji => !selections.includes(emoji));
+    const availableEmojis = emojiList.filter(
+      (emoji) => !selections.includes(emoji)
+    );
     const shuffled = [...availableEmojis].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 2);
   }, [emojiList, selections]);
@@ -31,7 +38,7 @@ function App() {
   }, [currentStep, generateRandomEmojis]);
 
   // Handle selection
-  const handleSelection = (selectedEmoji: string) => {
+  const handleSelection = async (selectedEmoji: string) => {
     const newSelections = [...selections, selectedEmoji];
     setSelections(newSelections);
 
@@ -40,6 +47,15 @@ function App() {
       setCurrentOptions(generateRandomEmojis());
     } else {
       setIsComplete(true);
+      setIsLoading(true);
+      try {
+        const response = await getSongRecommendations(newSelections);
+        setRecommendedSongs(response.songs);
+      } catch (error) {
+        console.error("Failed to get song recommendations:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -49,6 +65,7 @@ function App() {
     setSelections([]);
     setCurrentOptions(generateRandomEmojis());
     setIsComplete(false);
+    setRecommendedSongs([]);
   };
 
   // Generate new options without selecting
@@ -90,6 +107,11 @@ function App() {
                 </span>
               ))}
             </div>
+            {isLoading ? (
+              <p>正在为你推荐歌曲...</p>
+            ) : (
+              <SongRecommendations songs={recommendedSongs} />
+            )}
             <button className="reset-button" onClick={resetGame}>
               重新开始
             </button>
