@@ -341,9 +341,8 @@
   padding: 0.5rem 1rem;
   border-radius: 8px;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: opacity 0.2s ease;
   z-index: 2;
-  transform: scale(0.8);
 }
 
 .swipe-indicator.right {
@@ -353,7 +352,6 @@
   border: 2px solid rgba(46, 204, 113, 0.4);
   box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
   opacity: 1;
-  transform: scale(1);
 }
 
 .swipe-indicator.left {
@@ -363,5 +361,41 @@
   border: 2px solid rgba(231, 76, 60, 0.4);
   box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
   opacity: 1;
-  transform: scale(1);
+}
+
+.particles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+@keyframes particleAnimation {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  10% {
+    opacity: 0.8;
+    transform: translate(calc(var(--tx) * 0.3), calc(var(--ty) * 0.3))
+      scale(1.1);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(calc(var(--tx) * 0.7), calc(var(--ty) * 0.7))
+      scale(1.2);
+  }
+  70% {
+    opacity: 0.8;
+    transform: translate(var(--tx), var(--ty)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--tx) * 1.2), calc(var(--ty) * 1.2))
+      scale(0.8);
+  }
 }

@@ -5,6 +5,17 @@ import { getSongRecommendations } from "./services/songService";
 import SongRecommendations from "./components/SongRecommendations";
 import { Song } from "./types/song";
 
+// Particle types
+type Particle = {
+  id: number;
+  x: number;
+  y: number;
+  tx: number;
+  ty: number;
+  tr: number;
+  type: "heart" | "shatter";
+};
+
 function App() {
   const [likedEmojis, setLikedEmojis] = useState<string[]>([]);
   const [currentEmoji, setCurrentEmoji] = useState<string>("");
@@ -20,7 +31,10 @@ function App() {
   const [startX, setStartX] = useState<number>(0);
   const [currentX, setCurrentX] = useState<number>(0);
   const [isExiting, setIsExiting] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [showParticles, setShowParticles] = useState(false);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const particleIdCounter = useRef<number>(0);
 
   // Load emojis on mount
   useEffect(() => {
@@ -42,6 +56,70 @@ function App() {
       }
     },
     [emojiList, likedEmojis]
+  );
+
+  // Create particles for effects
+  const createParticles = useCallback(
+    (type: "heart" | "shatter", count: number = 15) => {
+      if (!emojiRef.current) return;
+
+      const rect = emojiRef.current.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      // Determine if particles should come from left or right edge
+      const isRightSwipe = swipeDirection === "right";
+      const edgeX = isRightSwipe ? 0 : rect.width; // Left edge for right swipe, right edge for left swipe
+
+      const newParticles: Particle[] = [];
+
+      for (let i = 0; i < count; i++) {
+        const id = particleIdCounter.current++;
+
+        // Random vertical position along the edge with more spread
+        const edgeY = Math.random() * rect.height;
+
+        // Calculate angle towards the center with more randomness
+        const angleToCenter = Math.atan2(centerY - edgeY, centerX - edgeX);
+
+        // Add more randomness to the angle
+        const randomAngle =
+          angleToCenter + (Math.random() - 0.5) * Math.PI * 0.8;
+
+        // Add a slight curve to the path
+        const curveFactor = (Math.random() - 0.5) * 0.5;
+        const curvedAngle = randomAngle + curveFactor;
+
+        // Distance varies more
+        const distance = 100 + Math.random() * 300;
+
+        // Calculate target position with more spread
+        const tx = Math.cos(curvedAngle) * distance;
+        const ty = Math.sin(curvedAngle) * distance;
+
+        // More random rotation
+        const tr = Math.random() * 720 - 360;
+
+        newParticles.push({
+          id,
+          x: edgeX,
+          y: edgeY,
+          tx,
+          ty,
+          tr,
+          type,
+        });
+      }
+
+      setParticles(newParticles);
+      setShowParticles(true);
+
+      // Remove particles after animation completes
+      setTimeout(() => {
+        setShowParticles(false);
+      }, 1500); // Reduced from 3000ms to 1500ms
+    },
+    [swipeDirection]
   );
 
   // Handle touch/mouse events for swipe
@@ -76,13 +154,24 @@ function App() {
 
     if (swipeDirection) {
       setIsExiting(true);
-      // Increase timeout to match longer animation duration
+
+      // Delay particle creation slightly to let the emoji start moving
+      setTimeout(() => {
+        // Create particles based on swipe direction
+        if (swipeDirection === "right") {
+          createParticles("heart", 25);
+        } else {
+          createParticles("shatter", 20);
+        }
+      }, 100);
+
+      // Wait for the emoji to exit and particles to finish before showing next emoji
       setTimeout(() => {
         handleEmojiResponse(swipeDirection === "right");
         setIsExiting(false);
         setSwipeDirection(null);
         setCurrentX(startX);
-      }, 500); // Increased from 300ms to 500ms
+      }, 1500); // Increased to match particle animation duration
     } else {
       // Return to center if not swiped enough
       setCurrentX(startX);
@@ -126,7 +215,10 @@ function App() {
       return;
     }
 
-    generateNewEmoji();
+    // Add a small delay before generating the next emoji
+    setTimeout(() => {
+      generateNewEmoji();
+    }, 100);
   };
 
   // Reset game
@@ -163,6 +255,26 @@ function App() {
     };
   };
 
+  // Get particle style with animation
+  const getParticleStyle = (particle: Particle) => {
+    const isHeart = particle.type === "heart";
+    const color = isHeart ? "#2ecc71" : "#e74c3c";
+    const scale = 0.8 + Math.random() * 0.4; // Random scale between 0.8 and 1.2
+    const duration = 0.8 + Math.random() * 0.4; // Random duration between 0.8s and 1.2s
+    const delay = Math.random() * 0.1; // Random delay between 0s and 0.1s
+
+    return {
+      position: "absolute" as const,
+      left: `${particle.x}px`,
+      top: `${particle.y}px`,
+      fontSize: isHeart ? `${1.5 * scale}rem` : `${1 * scale}rem`,
+      color: color,
+      zIndex: 20,
+      animation: `particleAnimation-${particle.id} ${duration}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s forwards`,
+      opacity: 0,
+    };
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -194,6 +306,18 @@ function App() {
                   </div>
                 )}
               </div>
+
+              {/* Particles container */}
+              {showParticles && (
+                <div className="particles-container">
+                  {particles.map((particle) => (
+                    <div key={particle.id} style={getParticleStyle(particle)}>
+                      {particle.type === "heart" ? "❤️" : "💔"}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="swipe-hint">
                 <span className="swipe-left">👎 Swipe left to dislike</span>
                 <span className="swipe-right">Swipe right to like 👍</span>
@@ -223,6 +347,42 @@ function App() {
           </div>
         )}
       </header>
+
+      {/* Add keyframe animations for each particle */}
+      <style>
+        {`
+          ${particles
+            .map(
+              (particle) => `
+            @keyframes particleAnimation-${particle.id} {
+              0% {
+                opacity: 0;
+                transform: translate(0, 0) scale(0.5);
+              }
+              20% {
+                opacity: 0.8;
+                transform: translate(${particle.tx * 0.4}px, ${
+                particle.ty * 0.4
+              }px) rotate(${particle.tr * 0.4}deg) scale(1.1);
+              }
+              60% {
+                opacity: 1;
+                transform: translate(${particle.tx * 0.8}px, ${
+                particle.ty * 0.8
+              }px) rotate(${particle.tr * 0.8}deg) scale(1.2);
+              }
+              100% {
+                opacity: 0;
+                transform: translate(${particle.tx * 1.2}px, ${
+                particle.ty * 1.2
+              }px) rotate(${particle.tr * 1.2}deg) scale(0.8);
+              }
+            }
+          `
+            )
+            .join("")}
+        `}
+      </style>
     </div>
   );
 }
