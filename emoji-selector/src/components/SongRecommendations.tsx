@@ -11,7 +11,7 @@ const SongRecommendations: React.FC<SongRecommendationsProps> = ({ songs }) => {
       <h2>Recommended Songs for You:</h2>
       <div className="songs-list">
         {songs.map((song) => (
-          <div key={song.id} className="song-item">
+          <div key={song.spotifyUrl} className="song-item">
             <iframe
               src={`https://open.spotify.com/embed/track/${song.spotifyUrl
                 .split("/")
