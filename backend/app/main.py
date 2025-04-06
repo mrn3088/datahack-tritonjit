@@ -36,25 +36,25 @@ SONGS_DB = [
         "id": "2",
         "title": "Don't Stop Believin'",
         "artist": "Journey",
-        "spotifyUrl": "https://open.spotify.com/track/0bX6fqFyBzlc83Hy4MMAjj",
+        "spotifyUrl": "https://open.spotify.com/track/4wJ5Qq0jBN4ajy7ouZIV1c",
     },
     {
         "id": "3",
         "title": "Good Vibes",
         "artist": "Avicii",
-        "spotifyUrl": "https://open.spotify.com/track/1Xh9p1JzqX1j8y8KZ3wU1X",
+        "spotifyUrl": "https://open.spotify.com/track/7ne4VBA60CxGM75vw0EYad",
     },
     {
         "id": "4",
         "title": "Walking on Sunshine",
         "artist": "Katrina & The Waves",
-        "spotifyUrl": "https://open.spotify.com/track/5qg5wLbCoxUpS70jC1H2qv",
+        "spotifyUrl": "https://open.spotify.com/track/3QaPy1KgI7nu9FJEQUgn6h",
     },
     {
         "id": "5",
         "title": "I Gotta Feeling",
         "artist": "The Black Eyed Peas",
-        "spotifyUrl": "https://open.spotify.com/track/2dqwwm1LPuxuCAw8tBwUg",
+        "spotifyUrl": "https://open.spotify.com/track/3AdXwuFn7j21HNiFMXvZXt",
     },
 ]
 
