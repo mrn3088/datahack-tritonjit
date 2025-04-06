@@ -39,17 +39,22 @@ function App() {
 
   // Handle selection
   const handleSelection = async (selectedEmoji: string) => {
+    console.log("handleSelection called with emoji:", selectedEmoji);
     const newSelections = [...selections, selectedEmoji];
+    console.log("Updated selections:", newSelections);
     setSelections(newSelections);
 
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       setCurrentOptions(generateRandomEmojis());
     } else {
+      console.log("Selection complete, getting recommendations...");
       setIsComplete(true);
       setIsLoading(true);
       try {
+        console.log("Calling getSongRecommendations with:", newSelections);
         const response = await getSongRecommendations(newSelections);
+        console.log("Received recommendations:", response);
         setRecommendedSongs(response.songs);
       } catch (error) {
         console.error("Failed to get song recommendations:", error);
