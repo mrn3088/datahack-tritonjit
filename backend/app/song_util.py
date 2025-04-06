@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_song_recommendation(client: OpenAIClient, emojis: str, refresh_song_list: bool = False) -> list[str]:
-    await asyncio.sleep(10000000000)
+    # await asyncio.sleep(10000000000)
     if refresh_song_list:
         await client.load_song_list()
     resp = await client.generate_response(emojis)
