@@ -3,7 +3,7 @@ import json
 import logging
 import asyncio
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.data import fetch_data_from_db
 
 # Load environment variables
@@ -29,7 +29,7 @@ USER_PROMPT = (
 
 class OpenAIClient:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv(
+        self.client = AsyncOpenAI(api_key=os.getenv(
             'OPENAI_API_KEY'), base_url="https://api.deepseek.com")
         self.song_list = None
 
@@ -52,7 +52,7 @@ class OpenAIClient:
         """
         assert self.song_list is not None, "Song list is not loaded"
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
