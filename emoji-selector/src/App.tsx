@@ -76,10 +76,10 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Emoji 选择器</h1>
+        <h1>Emoji Selector</h1>
         {!isComplete ? (
           <div className="selection-container">
-            <p>第 {currentStep + 1} 次选择 (共5次)</p>
+            <p>Selection {currentStep + 1} of 5</p>
             <div className="emoji-options">
               {currentOptions.map((emoji, index) => (
                 <button
@@ -93,13 +93,13 @@ function App() {
             </div>
             <div className="action-buttons">
               <button className="skip-button" onClick={handleSkip}>
-                换一对
+                Skip
               </button>
             </div>
           </div>
         ) : (
           <div className="results-container">
-            <h2>你的选择是：</h2>
+            <h2>Your selections:</h2>
             <div className="selected-emojis">
               {selections.map((emoji, index) => (
                 <span key={index} className="selected-emoji">
@@ -108,12 +108,12 @@ function App() {
               ))}
             </div>
             {isLoading ? (
-              <p>正在为你推荐歌曲...</p>
+              <p>Finding songs for you...</p>
             ) : (
               <SongRecommendations songs={recommendedSongs} />
             )}
             <button className="reset-button" onClick={resetGame}>
-              重新开始
+              Start Over
             </button>
           </div>
         )}
