@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import { loadEmojiList } from "./data/emojiList";
 import { getSongRecommendations } from "./services/songService";
@@ -6,112 +6,161 @@ import SongRecommendations from "./components/SongRecommendations";
 import { Song } from "./types/song";
 
 function App() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selections, setSelections] = useState<string[]>([]);
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [likedEmojis, setLikedEmojis] = useState<string[]>([]);
+  const [currentEmoji, setCurrentEmoji] = useState<string>("");
+  const [totalRecommendations, setTotalRecommendations] = useState<number>(0);
   const [isComplete, setIsComplete] = useState(false);
   const [emojiList, setEmojiList] = useState<string[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentGroup, setCurrentGroup] = useState<number>(0);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(
+    null
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [currentX, setCurrentX] = useState<number>(0);
+  const [isExiting, setIsExiting] = useState(false);
+  const emojiRef = useRef<HTMLDivElement>(null);
 
   // Load emojis on mount
   useEffect(() => {
     loadEmojiList().then((emojis) => {
       setEmojiList(emojis);
-      // Randomly select initial group
-      setCurrentGroup(Math.floor(Math.random() * 8));
+      generateNewEmoji(emojis);
     });
   }, []);
 
-  // Memoize generateRandomEmojis function with random group selection
-  const generateRandomEmojis = useCallback(() => {
-    const groupRanges = [
-      [0, 116],
-      [117, 204],
-      [205, 372],
-      [373, 480],
-      [481, 597],
-      [598, 890],
-      [891, 1482],
-      [1483, emojiList.length - 1]
-    ];
-
-    // Randomly select a group each time
-    const randomGroup = Math.floor(Math.random() * groupRanges.length);
-    const [start, end] = groupRanges[randomGroup];
-    const groupEmojis = emojiList.slice(start, end + 1);
-    
-    // Filter out already selected emojis from this group
-    const availableEmojis = groupEmojis.filter(
-      (emoji) => !selections.includes(emoji)
-    );
-
-    // If not enough emojis in current group, try another random group
-    if (availableEmojis.length < 2) {
-      const availableGroups = Array.from({ length: 8 }, (_, i) => i)
-        .filter(g => g !== randomGroup);
-      const newGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
-      
-      const [newStart, newEnd] = groupRanges[newGroup];
-      const newGroupEmojis = emojiList.slice(newStart, newEnd + 1);
-      const newAvailableEmojis = newGroupEmojis.filter(
-        (emoji) => !selections.includes(emoji)
+  // Generate a new random emoji
+  const generateNewEmoji = useCallback(
+    (emojis: string[] = emojiList) => {
+      const availableEmojis = emojis.filter(
+        (emoji) => !likedEmojis.includes(emoji)
       );
-      const shuffled = [...newAvailableEmojis].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, 2);
-    }
+      if (availableEmojis.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableEmojis.length);
+        setCurrentEmoji(availableEmojis[randomIndex]);
+      }
+    },
+    [emojiList, likedEmojis]
+  );
 
-    const shuffled = [...availableEmojis].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 2);
-  }, [emojiList, selections]);
+  // Handle touch/mouse events for swipe
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    setIsDragging(true);
+    setIsExiting(false);
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    setStartX(clientX);
+    setCurrentX(clientX);
+  };
 
-  // Initialize or reset game
-  useEffect(() => {
-    if (currentStep === 0) {
-      setCurrentOptions(generateRandomEmojis());
-    }
-  }, [currentStep, generateRandomEmojis]);
+  const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isDragging) return;
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    setCurrentX(clientX);
 
-  // Handle selection
-  const handleSelection = async (selectedEmoji: string) => {
-    console.log("handleSelection called with emoji:", selectedEmoji);
-    const newSelections = [...selections, selectedEmoji];
-    console.log("Updated selections:", newSelections);
-    setSelections(newSelections);
+    const diff = clientX - startX;
+    // Calculate the angle based on the swipe distance
+    const angle = Math.atan2(diff, 100) * (180 / Math.PI);
 
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
-      setCurrentOptions(generateRandomEmojis());
+    // Only set swipe direction if angle is significant (more than 30 degrees)
+    if (Math.abs(angle) > 30) {
+      setSwipeDirection(diff > 0 ? "right" : "left");
     } else {
-      console.log("Selection complete, getting recommendations...");
+      setSwipeDirection(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    if (swipeDirection) {
+      setIsExiting(true);
+      // Increase timeout to match longer animation duration
+      setTimeout(() => {
+        handleEmojiResponse(swipeDirection === "right");
+        setIsExiting(false);
+        setSwipeDirection(null);
+        setCurrentX(startX);
+      }, 500); // Increased from 300ms to 500ms
+    } else {
+      // Return to center if not swiped enough
+      setCurrentX(startX);
+      setSwipeDirection(null);
+    }
+  };
+
+  // Handle emoji like/dislike
+  const handleEmojiResponse = async (liked: boolean) => {
+    if (liked) {
+      const newLikedEmojis = [...likedEmojis, currentEmoji];
+      setLikedEmojis(newLikedEmojis);
+
+      if (newLikedEmojis.length >= 5) {
+        setIsComplete(true);
+        setIsLoading(true);
+        try {
+          const response = await getSongRecommendations(newLikedEmojis);
+          setRecommendedSongs(response.songs);
+        } catch (error) {
+          console.error("Failed to get song recommendations:", error);
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
+    }
+
+    setTotalRecommendations((prev) => prev + 1);
+    if (totalRecommendations + 1 >= 10) {
       setIsComplete(true);
       setIsLoading(true);
       try {
-        console.log("Calling getSongRecommendations with:", newSelections);
-        const response = await getSongRecommendations(newSelections);
-        console.log("Received recommendations:", response);
+        const response = await getSongRecommendations(likedEmojis);
         setRecommendedSongs(response.songs);
       } catch (error) {
         console.error("Failed to get song recommendations:", error);
       } finally {
         setIsLoading(false);
       }
+      return;
     }
+
+    generateNewEmoji();
   };
 
   // Reset game
   const resetGame = () => {
-    setCurrentStep(0);
-    setSelections([]);
-    setCurrentOptions(generateRandomEmojis());
+    setLikedEmojis([]);
+    setTotalRecommendations(0);
     setIsComplete(false);
     setRecommendedSongs([]);
+    generateNewEmoji();
   };
 
-  // Generate new options without selecting
-  const handleSkip = () => {
-    setCurrentOptions(generateRandomEmojis());
+  // Calculate transform style based on swipe
+  const getTransformStyle = () => {
+    if (!isDragging && !isExiting) return {};
+    const diff = currentX - startX;
+    // Calculate the angle for rotation
+    const angle = Math.atan2(diff, 100) * (180 / Math.PI);
+    // Limit the rotation to a reasonable range
+    const rotate = Math.max(Math.min(angle * 0.5, 30), -30);
+
+    const translateX = isExiting
+      ? swipeDirection === "right"
+        ? window.innerWidth
+        : -window.innerWidth
+      : diff;
+
+    // Add scale effect for exit animation
+    const scale = isExiting ? 0.5 : 1;
+
+    return {
+      transform: `translateX(${translateX}px) rotate(${rotate}deg) scale(${scale})`,
+      transition: isDragging ? "none" : "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+      opacity: isExiting ? 0 : 1,
+    };
   };
 
   return (
@@ -120,29 +169,42 @@ function App() {
         <h1>Emoji Selector</h1>
         {!isComplete ? (
           <div className="selection-container">
-            <p>Selection {currentStep + 1} of 5</p>
-            <div className="emoji-options">
-              {currentOptions.map((emoji, index) => (
-                <button
-                  key={index}
-                  className="emoji-button"
-                  onClick={() => handleSelection(emoji)}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-            <div className="action-buttons">
-              <button className="skip-button" onClick={handleSkip}>
-                Skip
-              </button>
+            <p>
+              Liked: {likedEmojis.length}/5 | Total: {totalRecommendations}/10
+            </p>
+            <div className="emoji-display">
+              <div
+                ref={emojiRef}
+                className={`current-emoji ${
+                  swipeDirection ? `swipe-${swipeDirection}` : ""
+                }`}
+                style={getTransformStyle()}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleTouchStart}
+                onMouseMove={handleTouchMove}
+                onMouseUp={handleTouchEnd}
+                onMouseLeave={handleTouchEnd}
+              >
+                {currentEmoji}
+                {swipeDirection && (
+                  <div className={`swipe-indicator ${swipeDirection}`}>
+                    {swipeDirection === "right" ? "✓" : "✕"}
+                  </div>
+                )}
+              </div>
+              <div className="swipe-hint">
+                <span className="swipe-left">👎 Swipe left to dislike</span>
+                <span className="swipe-right">Swipe right to like 👍</span>
+              </div>
             </div>
           </div>
         ) : (
           <div className="results-container">
-            <h2>Your selections:</h2>
+            <h2>Your liked emojis:</h2>
             <div className="selected-emojis">
-              {selections.map((emoji, index) => (
+              {likedEmojis.map((emoji, index) => (
                 <span key={index} className="selected-emoji">
                   {emoji}
                 </span>
@@ -151,11 +213,13 @@ function App() {
             {isLoading ? (
               <p>Finding songs for you...</p>
             ) : (
-              <SongRecommendations songs={recommendedSongs} />
+              <>
+                <SongRecommendations songs={recommendedSongs} />
+                <button className="reset-button" onClick={resetGame}>
+                  Start Over
+                </button>
+              </>
             )}
-            <button className="reset-button" onClick={resetGame}>
-              Start Over
-            </button>
           </div>
         )}
       </header>
