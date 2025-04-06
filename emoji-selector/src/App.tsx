@@ -279,6 +279,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
+        <h1 className="app-title">Moodify</h1>
         {!isComplete ? (
           <div className="selection-container">
             <p>
