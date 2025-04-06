@@ -1,8 +1,22 @@
 .App {
   text-align: center;
   min-height: 100vh;
-  background-color: #282c34;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
   color: white;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .App-logo {
@@ -100,19 +114,13 @@
   gap: 0.5rem;
   opacity: 0.7;
   transition: opacity 0.3s ease;
+  color: white;
+  font-weight: bold;
 }
 
 .swipe-left:hover,
 .swipe-right:hover {
   opacity: 1;
-}
-
-.swipe-left {
-  color: #e74c3c;
-}
-
-.swipe-right {
-  color: #2ecc71;
 }
 
 .current-emoji.swipe-left {
@@ -238,7 +246,7 @@
 }
 
 .song-recommendations {
-  margin-top: 2rem;
+  margin: 2rem auto;
   padding: 1.5rem;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 16px;

@@ -4,6 +4,7 @@ import { loadEmojiList } from "./data/emojiList";
 import { getSongRecommendations } from "./services/songService";
 import SongRecommendations from "./components/SongRecommendations";
 import { Song } from "./types/song";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 // Particle types
 type Particle = {
@@ -278,7 +279,6 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Emoji Selector</h1>
         {!isComplete ? (
           <div className="selection-container">
             <p>
@@ -325,17 +325,9 @@ function App() {
             </div>
           </div>
         ) : (
-          <div className="results-container">
-            <h2>Your liked emojis:</h2>
-            <div className="selected-emojis">
-              {likedEmojis.map((emoji, index) => (
-                <span key={index} className="selected-emoji">
-                  {emoji}
-                </span>
-              ))}
-            </div>
+          <div className="complete-container">
             {isLoading ? (
-              <p>Finding songs for you...</p>
+              <LoadingSpinner />
             ) : (
               <>
                 <SongRecommendations songs={recommendedSongs} />
